@@ -1,19 +1,27 @@
 import streamlit as st
-import openai
+import bcrypt
 import requests
 import pandas as pd
-from hashlib import sha256
-import csv
 import os
 
-# Ruta para los archivos CSV
+# Archivos CSV para usuarios y progreso
 USUARIOS_CSV = 'usuarios.csv'
 PROGRESO_CSV = 'progreso.csv'
 
 # API key de OpenRouter desde los secretos
 api_key = st.secrets["openrouter"]["api_key"]
 
-# Función para generar textos de OpenRouter
+# Función para generar un hash seguro de la contraseña con bcrypt
+def generar_hash_bcrypt(contraseña):
+    salt = bcrypt.gensalt()  # Genera un salt aleatorio
+    hash_contraseña = bcrypt.hashpw(contraseña.encode('utf-8'), salt)
+    return hash_contraseña
+
+# Función para verificar la contraseña usando bcrypt
+def verificar_contraseña(contraseña, hash_guardado):
+    return bcrypt.checkpw(contraseña.encode('utf-8'), hash_guardado)
+
+# Función para generar texto de OpenRouter
 def generar_texto(nivel):
     prompt = f"Genera un texto de comprensión lectora en español para un estudiante de bachillerato de nivel {nivel}."
     response = requests.post(
@@ -29,7 +37,7 @@ def generar_texto(nivel):
     )
     return response.json().get("choices")[0]["message"]["content"]
 
-# Función para generar preguntas más variadas
+# Función para generar preguntas relacionadas con el texto
 def generar_preguntas(texto):
     prompt = f"Genera preguntas de opción múltiple sobre el siguiente texto: {texto}. Haz preguntas sobre comprensión, vocabulario, pensamiento crítico y lógica."
     response = requests.post(
@@ -53,25 +61,24 @@ def evaluar_respuestas(respuestas_usuario, respuestas_correctas):
 
 # Función para iniciar sesión
 def login():
-    # Cargar los usuarios desde el archivo CSV
     if os.path.exists(USUARIOS_CSV):
         usuarios = pd.read_csv(USUARIOS_CSV)
-        usuarios_dict = dict(zip(usuarios['email'], usuarios['password']))
     else:
-        usuarios_dict = {}
+        usuarios = pd.DataFrame(columns=["email", "password"])
 
     email = st.text_input("Correo electrónico", "")
     password = st.text_input("Contraseña", type="password")
     
     if st.button("Iniciar sesión"):
-        if email in usuarios_dict and usuarios_dict[email] == sha256(password.encode()).hexdigest():
+        usuario = usuarios[usuarios['email'] == email]
+        if not usuario.empty and verificar_contraseña(password, usuario['password'].values[0]):
             return email
         else:
             st.error("Correo electrónico o contraseña incorrectos.")
             return None
     return None
 
-# Función para agregar, editar y eliminar usuarios (solo accesible para el administrador)
+# Función para agregar, editar y eliminar usuarios
 def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     action = st.radio("Selecciona una acción", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])
@@ -80,16 +87,17 @@ def gestionar_usuarios():
 
     if action == "Agregar Usuario":
         if st.button("Agregar"):
-            # Agregar usuario al archivo CSV
             usuarios = pd.read_csv(USUARIOS_CSV) if os.path.exists(USUARIOS_CSV) else pd.DataFrame(columns=["email", "password"])
-            usuarios = usuarios.append({"email": email, "password": sha256(password.encode()).hexdigest()}, ignore_index=True)
+            hashed_password = generar_hash_bcrypt(password)
+            usuarios = usuarios.append({"email": email, "password": hashed_password}, ignore_index=True)
             usuarios.to_csv(USUARIOS_CSV, index=False)
             st.success(f"Usuario {email} agregado correctamente.")
     elif action == "Editar Usuario":
         if st.button("Editar"):
             usuarios = pd.read_csv(USUARIOS_CSV)
             if email in usuarios['email'].values:
-                usuarios.loc[usuarios['email'] == email, 'password'] = sha256(password.encode()).hexdigest()
+                hashed_password = generar_hash_bcrypt(password)
+                usuarios.loc[usuarios['email'] == email, 'password'] = hashed_password
                 usuarios.to_csv(USUARIOS_CSV, index=False)
                 st.success(f"Contraseña de {email} actualizada.")
             else:
