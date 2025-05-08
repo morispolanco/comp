@@ -21,6 +21,9 @@ def generar_hash_bcrypt(contraseña):
 
 # Función para verificar la contraseña usando bcrypt
 def verificar_contraseña(contraseña, hash_guardado):
+    # Si el hash_guardado es una cadena, convertirlo a bytes
+    if isinstance(hash_guardado, str):
+        hash_guardado = hash_guardado.encode('utf-8')
     return bcrypt.checkpw(contraseña.encode('utf-8'), hash_guardado)
 
 # Función para generar una contraseña aleatoria segura
