@@ -105,6 +105,7 @@ def gestionar_usuarios():
             usuarios.to_csv(USUARIOS_CSV, index=False)
             st.success(f"Usuario {email} agregado correctamente. La contraseña es: {contraseña_segura}")
     elif action == "Editar Usuario":
+        password = st.text_input("Nueva Contraseña", type="password")
         if st.button("Editar"):
             usuarios = pd.read_csv(USUARIOS_CSV)
             if email in usuarios['email'].values:
@@ -131,44 +132,62 @@ def almacenar_progreso(usuario, nivel, puntaje):
     progreso = progreso.append(nuevo_registro, ignore_index=True)
     progreso.to_csv(PROGRESO_CSV, index=False)
 
+# Función para mostrar el progreso de los estudiantes
+def ver_progreso():
+    st.title("Progreso de los Estudiantes")
+    if os.path.exists(PROGRESO_CSV):
+        progreso = pd.read_csv(PROGRESO_CSV)
+        st.dataframe(progreso)  # Mostrar el progreso en una tabla
+    else:
+        st.warning("No hay registros de progreso aún.")
+
 # Función principal para manejar el flujo de la aplicación
 def main():
-    # Control de acceso
-    usuario = login()
-    if not usuario:
-        return
-    
-    # Selección de nivel
-    st.title("Mejora tu comprensión lectora")
-    nivel = st.radio("Selecciona tu nivel de dificultad", ["Básico", "Intermedio", "Avanzado"])
-    
-    # Generar texto y preguntas
-    texto = generar_texto(nivel)
-    st.subheader("Texto de lectura:")
-    st.write(texto)
-    
-    preguntas = generar_preguntas(texto).split("\n")
-    respuestas_correctas = ["a", "b", "c", "a", "b"]  # Este es un ejemplo, en la implementación real obtendrás las respuestas correctas
-    
-    respuestas_usuario = []
-    
-    # Mostrar preguntas
-    for i, pregunta in enumerate(preguntas):
-        opciones = pregunta.split(";")  # Asumiendo que las opciones están separadas por ";"
-        respuesta = st.radio(f"Pregunta {i + 1}", opciones)
-        respuestas_usuario.append(respuesta)
-    
-    if st.button("Enviar respuestas"):
-        puntaje, feedback = evaluar_respuestas(respuestas_usuario, respuestas_correctas)
-        st.write(f"Puntaje: {puntaje}/5")
-        st.write(feedback)
+    # Menú de navegación
+    st.sidebar.title("Menú de administración")
+    opcion = st.sidebar.radio("Selecciona una opción", ["Inicio", "Administración", "Ver Progreso"])
+
+    if opcion == "Inicio":
+        # Control de acceso
+        usuario = login()
+        if not usuario:
+            return
         
-        # Almacenar el progreso
-        almacenar_progreso(usuario, nivel, puntaje)
-    
-    # Administrar usuarios (solo accesible por el administrador)
-    if usuario == "admin@dominio.com":  # Solo el admin puede gestionar usuarios
+        # Selección de nivel
+        st.title("Mejora tu comprensión lectora")
+        nivel = st.radio("Selecciona tu nivel de dificultad", ["Básico", "Intermedio", "Avanzado"])
+        
+        # Generar texto y preguntas
+        texto = generar_texto(nivel)
+        st.subheader("Texto de lectura:")
+        st.write(texto)
+        
+        preguntas = generar_preguntas(texto).split("\n")
+        respuestas_correctas = ["a", "b", "c", "a", "b"]  # Este es un ejemplo, en la implementación real obtendrás las respuestas correctas
+        
+        respuestas_usuario = []
+        
+        # Mostrar preguntas
+        for i, pregunta in enumerate(preguntas):
+            opciones = pregunta.split(";")  # Asumiendo que las opciones están separadas por ";"
+            respuesta = st.radio(f"Pregunta {i + 1}", opciones)
+            respuestas_usuario.append(respuesta)
+        
+        if st.button("Enviar respuestas"):
+            puntaje, feedback = evaluar_respuestas(respuestas_usuario, respuestas_correctas)
+            st.write(f"Puntaje: {puntaje}/5")
+            st.write(feedback)
+            
+            # Almacenar el progreso
+            almacenar_progreso(usuario, nivel, puntaje)
+        
+    elif opcion == "Administración":
+        # Gestión de usuarios (solo accesible por el administrador)
         gestionar_usuarios()
+
+    elif opcion == "Ver Progreso":
+        # Ver progreso de los estudiantes
+        ver_progreso()
 
 if __name__ == "__main__":
     main()
