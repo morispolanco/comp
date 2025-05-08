@@ -101,7 +101,7 @@ def login():
 def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     
-    # Verificar si el archivo de usuarios está vacío
+    # Verificar si el archivo de usuarios está vacío o no existe
     if os.path.exists(USUARIOS_CSV):
         try:
             usuarios = pd.read_csv(USUARIOS_CSV)
@@ -109,6 +109,8 @@ def gestionar_usuarios():
                 st.warning("No hay usuarios registrados. Por favor, agregue al menos un usuario.")
         except pd.errors.EmptyDataError:
             st.warning("El archivo de usuarios está vacío o malformado. No se pueden procesar los usuarios.")
+    else:
+        st.warning("El archivo de usuarios no existe.")
     
     action = st.radio("Selecciona una acción", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])
     email = st.text_input("Correo electrónico")
