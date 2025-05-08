@@ -79,6 +79,7 @@ def login():
                 st.warning("El archivo de usuarios está vacío. No se pueden procesar los usuarios.")
                 return None
         except pd.errors.EmptyDataError:
+            # Si el archivo está vacío, manejar el error de forma correcta
             st.warning("El archivo de usuarios está vacío o malformado. No se pueden procesar los usuarios.")
             return None
     else:
@@ -90,11 +91,25 @@ def login():
     
     if st.button("Iniciar sesión"):
         usuarios = pd.read_csv(USUARIOS_CSV)
+        
+        # Verificación si las columnas 'email' y 'password' existen en el DataFrame
+        if 'email' not in usuarios.columns or 'password' not in usuarios.columns:
+            st.error("El archivo de usuarios está mal formado. Las columnas 'email' y 'password' son necesarias.")
+            return None
+
         usuario = usuarios[usuarios['email'] == email]
-        if not usuario.empty and verificar_contraseña(password, usuario['password'].values[0]):
-            return email
+        if not usuario.empty:
+            try:
+                if verificar_contraseña(password, usuario['password'].values[0]):
+                    return email
+                else:
+                    st.error("Contraseña incorrecta.")
+                    return None
+            except IndexError:
+                st.error("Error al acceder a la contraseña.")
+                return None
         else:
-            st.error("Correo electrónico o contraseña incorrectos.")
+            st.error("Correo electrónico no encontrado.")
             return None
     return None
 
@@ -102,7 +117,7 @@ def login():
 def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     
-    # Verificar si el archivo de usuarios está vacío
+    # Verificar si el archivo de usuarios está vacío o no existe
     if os.path.exists(USUARIOS_CSV):
         try:
             usuarios = pd.read_csv(USUARIOS_CSV)
@@ -122,9 +137,10 @@ def gestionar_usuarios():
             contraseña_segura = generar_contraseña_segura()
             hashed_password = generar_hash_bcrypt(contraseña_segura)
             
-            # Agregar usuario al archivo CSV
+            # Agregar usuario al archivo CSV utilizando pd.concat
             usuarios = pd.read_csv(USUARIOS_CSV) if os.path.exists(USUARIOS_CSV) else pd.DataFrame(columns=["email", "password"])
-            usuarios = usuarios.append({"email": email, "password": hashed_password}, ignore_index=True)
+            nuevo_usuario = pd.DataFrame([{"email": email, "password": hashed_password}])
+            usuarios = pd.concat([usuarios, nuevo_usuario], ignore_index=True)
             usuarios.to_csv(USUARIOS_CSV, index=False)
             st.success(f"Usuario {email} agregado correctamente. La contraseña es: {contraseña_segura}")
     elif action == "Editar Usuario":
