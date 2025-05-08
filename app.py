@@ -3,6 +3,8 @@ import bcrypt
 import requests
 import pandas as pd
 import os
+import secrets
+import string
 
 # Archivos CSV para usuarios y progreso
 USUARIOS_CSV = 'usuarios.csv'
@@ -20,6 +22,13 @@ def generar_hash_bcrypt(contraseña):
 # Función para verificar la contraseña usando bcrypt
 def verificar_contraseña(contraseña, hash_guardado):
     return bcrypt.checkpw(contraseña.encode('utf-8'), hash_guardado)
+
+# Función para generar una contraseña aleatoria segura
+def generar_contraseña_segura(longitud=12):
+    # Generar una contraseña segura utilizando caracteres aleatorios
+    caracteres = string.ascii_letters + string.digits + string.punctuation
+    contraseña = ''.join(secrets.choice(caracteres) for i in range(longitud))
+    return contraseña
 
 # Función para generar texto de OpenRouter
 def generar_texto(nivel):
@@ -83,15 +92,18 @@ def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     action = st.radio("Selecciona una acción", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])
     email = st.text_input("Correo electrónico")
-    password = st.text_input("Contraseña", type="password")
-
+    
     if action == "Agregar Usuario":
         if st.button("Agregar"):
+            # Generar una contraseña segura aleatoria
+            contraseña_segura = generar_contraseña_segura()
+            hashed_password = generar_hash_bcrypt(contraseña_segura)
+            
+            # Agregar usuario al archivo CSV
             usuarios = pd.read_csv(USUARIOS_CSV) if os.path.exists(USUARIOS_CSV) else pd.DataFrame(columns=["email", "password"])
-            hashed_password = generar_hash_bcrypt(password)
             usuarios = usuarios.append({"email": email, "password": hashed_password}, ignore_index=True)
             usuarios.to_csv(USUARIOS_CSV, index=False)
-            st.success(f"Usuario {email} agregado correctamente.")
+            st.success(f"Usuario {email} agregado correctamente. La contraseña es: {contraseña_segura}")
     elif action == "Editar Usuario":
         if st.button("Editar"):
             usuarios = pd.read_csv(USUARIOS_CSV)
