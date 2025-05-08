@@ -73,6 +73,7 @@ def login():
     # Verificar si el archivo de usuarios existe y no está vacío
     if os.path.exists(USUARIOS_CSV):
         try:
+            # Intentamos leer el archivo, si está vacío lanzará EmptyDataError
             usuarios = pd.read_csv(USUARIOS_CSV)
             if usuarios.empty:
                 st.warning("El archivo de usuarios está vacío. No se pueden procesar los usuarios.")
