@@ -206,3 +206,11 @@ def main():
         
     elif opcion == "Administración":
         # Gestión de usuarios (siempre accesible)
+        gestionar_usuarios()
+
+    elif opcion == "Ver Progreso":
+        # Ver progreso de los estudiantes
+        ver_progreso()
+
+if __name__ == "__main__":
+    main()
