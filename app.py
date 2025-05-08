@@ -70,11 +70,11 @@ def evaluar_respuestas(respuestas_usuario, respuestas_correctas):
 
 # Función para iniciar sesión
 def login():
-    # Verificar si el archivo de usuarios existe y no está vacío
+    # Verificar si el archivo de usuarios existe
     if os.path.exists(USUARIOS_CSV):
         try:
-            # Intentamos leer el archivo, si está vacío lanzará EmptyDataError
             usuarios = pd.read_csv(USUARIOS_CSV)
+            # Si el archivo está vacío, mostrar advertencia y retornar None
             if usuarios.empty:
                 st.warning("El archivo de usuarios está vacío. No se pueden procesar los usuarios.")
                 return None
@@ -89,6 +89,7 @@ def login():
     password = st.text_input("Contraseña", type="password")
     
     if st.button("Iniciar sesión"):
+        usuarios = pd.read_csv(USUARIOS_CSV)
         usuario = usuarios[usuarios['email'] == email]
         if not usuario.empty and verificar_contraseña(password, usuario['password'].values[0]):
             return email
@@ -101,7 +102,7 @@ def login():
 def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     
-    # Verificar si el archivo de usuarios está vacío o no existe
+    # Verificar si el archivo de usuarios está vacío
     if os.path.exists(USUARIOS_CSV):
         try:
             usuarios = pd.read_csv(USUARIOS_CSV)
@@ -205,11 +206,3 @@ def main():
         
     elif opcion == "Administración":
         # Gestión de usuarios (siempre accesible)
-        gestionar_usuarios()
-
-    elif opcion == "Ver Progreso":
-        # Ver progreso de los estudiantes
-        ver_progreso()
-
-if __name__ == "__main__":
-    main()
