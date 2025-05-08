@@ -70,10 +70,19 @@ def evaluar_respuestas(respuestas_usuario, respuestas_correctas):
 
 # Función para iniciar sesión
 def login():
+    # Verificar si el archivo de usuarios existe y no está vacío
     if os.path.exists(USUARIOS_CSV):
-        usuarios = pd.read_csv(USUARIOS_CSV)
+        try:
+            usuarios = pd.read_csv(USUARIOS_CSV)
+            if usuarios.empty:
+                st.warning("El archivo de usuarios está vacío. No se pueden procesar los usuarios.")
+                return None
+        except pd.errors.EmptyDataError:
+            st.warning("El archivo de usuarios está vacío o malformado. No se pueden procesar los usuarios.")
+            return None
     else:
-        usuarios = pd.DataFrame(columns=["email", "password"])
+        st.warning("El archivo de usuarios no existe.")
+        return None
 
     email = st.text_input("Correo electrónico", "")
     password = st.text_input("Contraseña", type="password")
@@ -92,8 +101,13 @@ def gestionar_usuarios():
     st.title("Gestión de Usuarios")
     
     # Verificar si el archivo de usuarios está vacío
-    if os.path.exists(USUARIOS_CSV) and pd.read_csv(USUARIOS_CSV).empty:
-        st.warning("No hay usuarios registrados. Por favor, agregue al menos un usuario.")
+    if os.path.exists(USUARIOS_CSV):
+        try:
+            usuarios = pd.read_csv(USUARIOS_CSV)
+            if usuarios.empty:
+                st.warning("No hay usuarios registrados. Por favor, agregue al menos un usuario.")
+        except pd.errors.EmptyDataError:
+            st.warning("El archivo de usuarios está vacío o malformado. No se pueden procesar los usuarios.")
     
     action = st.radio("Selecciona una acción", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])
     email = st.text_input("Correo electrónico")
