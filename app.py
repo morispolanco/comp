@@ -90,6 +90,11 @@ def login():
 # Función para agregar, editar y eliminar usuarios
 def gestionar_usuarios():
     st.title("Gestión de Usuarios")
+    
+    # Verificar si el archivo de usuarios está vacío
+    if os.path.exists(USUARIOS_CSV) and pd.read_csv(USUARIOS_CSV).empty:
+        st.warning("No hay usuarios registrados. Por favor, agregue al menos un usuario.")
+    
     action = st.radio("Selecciona una acción", ["Agregar Usuario", "Editar Usuario", "Eliminar Usuario"])
     email = st.text_input("Correo electrónico")
     
@@ -182,7 +187,7 @@ def main():
             almacenar_progreso(usuario, nivel, puntaje)
         
     elif opcion == "Administración":
-        # Gestión de usuarios (solo accesible por el administrador)
+        # Gestión de usuarios (siempre accesible)
         gestionar_usuarios()
 
     elif opcion == "Ver Progreso":
